@@ -55,12 +55,12 @@ namespace Emotes
 		public override void Initialize()
 		{
 			ChatRegex = new Regex(@"\:(\S+)\:");
-			SmileyRegex = new Regex(@"(?<happy>[:;=][,.'^o-]?[)D])|(?<heart><3)|(?<kissy>[:;=][,.'^o-]?\*)|(?<sleepy>[zZ]{3,5})|(?<confuse>\?{2,5})|(?<angry>[D>\]][:;=][,.'^0-]?[\(<\/])|(?<cry>(?>[:=][,'][\(\/])|(?>[T;][-_][T;]))");
+			SmileyRegex = new Regex(@"(?<happy>[:;=][,.'^o-]?[)D])|(?<heart><3)|(?<kissy>[:;=][,.'^o-]?\*)|(?<sleepy>[zZ]{3,5})|(?<confuse>\?{2,5})|(?<angry>[D>\]][:;=][,.'^0-]?[\(<\/])|(?<cry>(?>[:=][,'][\(\/])|(?>[T;][-_][T;]))|^(?<rip>[Rr][Ii][Pp])$");
 			r = new Random();
 
 			ServerApi.Hooks.ServerChat.Register(this, OnChat, 6);
 		}
-
+		
 		private void OnChat(ServerChatEventArgs args)
 		{
 			if (!ChatRegex.IsMatch(args.Text) && !SmileyRegex.IsMatch(args.Text))
@@ -111,6 +111,10 @@ namespace Emotes
 			{
 				emoteID = EmoteID.EmotionCry;
 			}
+			else if (!String.IsNullOrEmpty(match.Groups["rip"].Value))
+			{
+				emoteID = EmoteID.ItemTombstone;
+			}
 			else
 			{
 				return;
@@ -125,7 +129,8 @@ namespace Emotes
 			int emoteID;
 			
 			string match = ChatRegex.Match(args.Text).Groups[1].Value;
-			
+
+
 			switch (match.ToLower())
 			{
 				case "happy":
@@ -133,6 +138,32 @@ namespace Emotes
 				case "laugh":
 				case "lol":
 					emoteID = EmoteID.EmoteLaugh;
+					break;
+
+				case "kiss":
+					emoteID = EmoteID.EmoteKiss;
+					break;
+
+				case "sleep":
+				case "sleepy":
+				case "zzz":
+					emoteID = EmoteID.EmoteSleep;
+					break;
+
+				case "confused":
+				case "???":
+					emoteID = EmoteID.EmoteConfused;
+					break;
+
+				case "angry":
+				case "grumpy":
+				case "anger":
+					emoteID = EmoteID.EmotionAnger;
+					break;
+
+				case "cry":
+				case "sad":
+					emoteID = EmoteID.EmotionCry;
 					break;
 
 				case "rock-paper-scissors":
@@ -144,6 +175,10 @@ namespace Emotes
 				case "love":
 				case "<3":
 					emoteID = EmoteID.EmotionLove;
+					break;
+
+				case "rip":
+					emoteID = EmoteID.ItemTombstone;
 					break;
 
 				default:
