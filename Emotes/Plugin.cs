@@ -1,5 +1,7 @@
-﻿
-using System;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
 using Terraria;
 using Terraria.GameContent.UI;
@@ -12,9 +14,9 @@ namespace Emotes
 	[ApiVersion(1, 20)]
 	public class Plugin : TerrariaPlugin
 	{
-		internal Regex ChatRegex;
-		internal Regex SmileyRegex;
-		internal Random r;
+		internal string SavePath { get { return Path.Combine(TShock.SavePath, "Emotes.json"); } }
+		internal Config config = new Config();
+		internal Dictionary<Regex, EmoteRegex> Regexes = new Dictionary<Regex, EmoteRegex>();
 
 		public override string Author
 		{
@@ -53,140 +55,87 @@ namespace Emotes
 		}
 
 		public override void Initialize()
-		{
-			ChatRegex = new Regex(@"\:(\S+)\:");
-			SmileyRegex = new Regex(@"(?<happy>[:;=][,.'^o-]?[)D])|(?<heart><3)|(?<kissy>[:;=][,.'^o-]?\*)|(?<sleepy>[zZ]{3,5})|(?<confuse>\?{2,5})|(?<angry>[D>\]][:;=][,.'^0-]?[\(<\/])|(?<cry>(?>[:=][,'][\(\/])|(?>[T;][-_][T;]))|^(?<rip>[Rr][Ii][Pp])$");
-			r = new Random();
+		{ 
+			if (!File.Exists(SavePath))
+			{
+				AddDefaultsToConfig();
+				config.Write(SavePath);
+			}
+			config.Read(SavePath);
 
+			foreach (EmoteRegex regex in config.Emotes)
+			{
+				Regexes.Add(new Regex(regex.ToString()), regex);
+			}
+			
 			ServerApi.Hooks.ServerChat.Register(this, OnChat, 6);
+			TShockAPI.Hooks.GeneralHooks.ReloadEvent += OnReload;
+		}
+
+		private void OnReload(TShockAPI.Hooks.ReloadEventArgs e)
+		{
+			if (!File.Exists(SavePath))
+			{
+				AddDefaultsToConfig();
+				config.Write(SavePath);
+			}
+			config.Read(SavePath);
+
+			Regexes.Clear();
+
+			foreach (EmoteRegex regex in config.Emotes)
+			{
+				Regexes.Add(new Regex(regex.ToString()), regex);
+			}
+		}
+
+		private void AddDefaultsToConfig()
+		{
+			config.Emotes.Add(
+				new EmoteRegex("Happy",	@"[:;=][,.'^o-]?[)D]", "happy,smile,laugh,lol", EmoteID.EmoteLaugh));
+
+			config.Emotes.Add(
+				new EmoteRegex("Heart", @"<3", "love,<3", EmoteID.EmotionLove));
+
+			config.Emotes.Add(
+				new EmoteRegex("Kissy", @"[:;=][,.'^o-]?\*", "kiss", EmoteID.EmoteKiss));
+
+			config.Emotes.Add(
+				new EmoteRegex("Sleepy", @"[zZ]{3,5}", "sleep,sleepy,zzz", EmoteID.EmoteSleep));
+
+			config.Emotes.Add(
+				new EmoteRegex("Confused", @"\?{2,5}", "confused,???", EmoteID.EmoteConfused));
+
+			config.Emotes.Add(
+				new EmoteRegex("Angry", @"[D>\]][:;=][,.'^0-]?[\(<\/]", "angry,grumpy,anger", EmoteID.EmotionAnger));
+
+			config.Emotes.Add(
+				new EmoteRegex("Cry", @"(?>[:=][,'][\(\/])|(?>[T;][-_][T;])", "cry,sad", EmoteID.EmotionCry));
+
+			config.Emotes.Add(
+				new EmoteRegex("Rip", @"^[Rr][Ii][Pp]$", "rip", EmoteID.ItemTombstone));
 		}
 		
 		private void OnChat(ServerChatEventArgs args)
 		{
-			if (!ChatRegex.IsMatch(args.Text) && !SmileyRegex.IsMatch(args.Text))
+			//Check if the provided text matches any of the defined regexes
+			Regex regex = Regexes.Keys.FirstOrDefault(r => r.IsMatch(args.Text));
+
+			if (regex == null)
 			{
 				return;
 			}
 
-			if (SmileyRegex.IsMatch(args.Text))
-			{
-				SendSmiley(SmileyRegex.Match(args.Text), args.Who);
-			}
-			else
-			{
-				SendOtherEmote(ref args);
-			}
-		}
+			Match match = regex.Match(args.Text);
 
-		private void SendSmiley(Match match, int who)
-		{
 			int ID = EmoteBubble.AssignNewID();
-			int emoteID;
 
-			if (!String.IsNullOrEmpty(match.Groups["happy"].Value))
+			if (!String.IsNullOrEmpty(match.Groups["spoken"].Value))
 			{
-				emoteID = EmoteID.EmoteLaugh;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["heart"].Value))
-			{
-				emoteID = EmoteID.EmotionLove;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["kissy"].Value))
-			{
-				emoteID = EmoteID.EmoteKiss;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["sleepy"].Value))
-			{
-				emoteID = EmoteID.EmoteSleep;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["confuse"].Value))
-			{
-				emoteID = EmoteID.EmoteConfused;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["angry"].Value))
-			{
-				emoteID = EmoteID.EmotionAnger;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["cry"].Value))
-			{
-				emoteID = EmoteID.EmotionCry;
-			}
-			else if (!String.IsNullOrEmpty(match.Groups["rip"].Value))
-			{
-				emoteID = EmoteID.ItemTombstone;
-			}
-			else
-			{
-				return;
+				args.Handled = true;
 			}
 
-			NetMessage.SendData(91, -1, -1, "", ID, 1, who, 600, emoteID);
-		}
-
-		private void SendOtherEmote(ref ServerChatEventArgs args)
-		{
-			int ID = EmoteBubble.AssignNewID();
-			int emoteID;
-			
-			string match = ChatRegex.Match(args.Text).Groups[1].Value;
-
-
-			switch (match.ToLower())
-			{
-				case "happy":
-				case "smile":
-				case "laugh":
-				case "lol":
-					emoteID = EmoteID.EmoteLaugh;
-					break;
-
-				case "kiss":
-					emoteID = EmoteID.EmoteKiss;
-					break;
-
-				case "sleep":
-				case "sleepy":
-				case "zzz":
-					emoteID = EmoteID.EmoteSleep;
-					break;
-
-				case "confused":
-				case "???":
-					emoteID = EmoteID.EmoteConfused;
-					break;
-
-				case "angry":
-				case "grumpy":
-				case "anger":
-					emoteID = EmoteID.EmotionAnger;
-					break;
-
-				case "cry":
-				case "sad":
-					emoteID = EmoteID.EmotionCry;
-					break;
-
-				case "rock-paper-scissors":
-				case "rps":
-				case "r-p-s":
-					emoteID = r.Next(EmoteID.RPSScissors, EmoteID.RPSPaper + 1);
-					break;
-
-				case "love":
-				case "<3":
-					emoteID = EmoteID.EmotionLove;
-					break;
-
-				case "rip":
-					emoteID = EmoteID.ItemTombstone;
-					break;
-
-				default:
-					return;
-			}
-
-			NetMessage.SendData(91, -1, -1, "", ID, 1, args.Who, 600, emoteID);
-			args.Handled = true;
+			NetMessage.SendData(91, -1, -1, "", ID, 1, args.Who, 600, Regexes[regex].EmoteID);
 		}
 
 		protected override void Dispose(bool disposing)
@@ -194,6 +143,7 @@ namespace Emotes
 			if (disposing)
 			{
 				ServerApi.Hooks.ServerChat.Deregister(this, OnChat);
+				TShockAPI.Hooks.GeneralHooks.ReloadEvent -= OnReload;
 			}
 			base.Dispose(disposing);
 		}
