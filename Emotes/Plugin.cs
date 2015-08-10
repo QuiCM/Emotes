@@ -118,15 +118,23 @@ namespace Emotes
 		
 		private void OnChat(ServerChatEventArgs args)
 		{
+			TSPlayer player = TShock.Players[args.Who];
+			if (player == null)
+			{
+				return;
+			}
+
+			string text = args.Text.RemoveCharacterName(player.Name);
+
 			//Check if the provided text matches any of the defined regexes
-			Regex regex = Regexes.Keys.FirstOrDefault(r => r.IsMatch(args.Text));
+			Regex regex = Regexes.Keys.FirstOrDefault(r => r.IsMatch(text));
 
 			if (regex == null)
 			{
 				return;
 			}
 
-			Match match = regex.Match(args.Text);
+			Match match = regex.Match(text);
 
 			int ID = EmoteBubble.AssignNewID();
 
@@ -146,6 +154,18 @@ namespace Emotes
 				TShockAPI.Hooks.GeneralHooks.ReloadEvent -= OnReload;
 			}
 			base.Dispose(disposing);
+		}
+	}
+
+	public static class StrExt
+	{
+		public static string RemoveCharacterName(this string str, string name)
+		{
+			if (str.Substring(0, name.Length) == name)
+			{
+				str.Remove(0, name.Length);
+			}
+			return str;
 		}
 	}
 }
