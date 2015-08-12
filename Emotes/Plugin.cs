@@ -55,7 +55,7 @@ namespace Emotes
 		}
 
 		public override void Initialize()
-		{ 
+		{
 			if (!File.Exists(SavePath))
 			{
 				AddDefaultsToConfig();
@@ -67,7 +67,7 @@ namespace Emotes
 			{
 				Regexes.Add(new Regex(regex.ToString()), regex);
 			}
-			
+
 			ServerApi.Hooks.ServerChat.Register(this, OnChat, 6);
 			TShockAPI.Hooks.GeneralHooks.ReloadEvent += OnReload;
 		}
@@ -92,7 +92,7 @@ namespace Emotes
 		private void AddDefaultsToConfig()
 		{
 			config.Emotes.Add(
-				new EmoteRegex("Happy",	@"[:;=][,.'^o-]?[)D]", "happy,smile,laugh,lol", EmoteID.EmoteLaugh));
+				new EmoteRegex("Happy", @"[:;=][,.'^o-]?[)D]", "happy,smile,laugh,lol", EmoteID.EmoteLaugh));
 
 			config.Emotes.Add(
 				new EmoteRegex("Heart", @"<3", "love,<3", EmoteID.EmotionLove));
@@ -115,7 +115,7 @@ namespace Emotes
 			config.Emotes.Add(
 				new EmoteRegex("Rip", @"^[Rr][Ii][Pp]$", "rip", EmoteID.ItemTombstone));
 		}
-		
+
 		private void OnChat(ServerChatEventArgs args)
 		{
 			TSPlayer player = TShock.Players[args.Who];
@@ -124,17 +124,15 @@ namespace Emotes
 				return;
 			}
 
-			string text = args.Text.RemoveCharacterName(player.Name);
-
 			//Check if the provided text matches any of the defined regexes
-			Regex regex = Regexes.Keys.FirstOrDefault(r => r.IsMatch(text));
+			Regex regex = Regexes.Keys.FirstOrDefault(r => r.IsMatch(args.Text));
 
 			if (regex == null)
 			{
 				return;
 			}
 
-			Match match = regex.Match(text);
+			Match match = regex.Match(args.Text);
 
 			int ID = EmoteBubble.AssignNewID();
 
@@ -154,18 +152,6 @@ namespace Emotes
 				TShockAPI.Hooks.GeneralHooks.ReloadEvent -= OnReload;
 			}
 			base.Dispose(disposing);
-		}
-	}
-
-	public static class StrExt
-	{
-		public static string RemoveCharacterName(this string str, string name)
-		{
-			if (str.Substring(0, name.Length) == name)
-			{
-				str.Remove(0, name.Length);
-			}
-			return str;
 		}
 	}
 }
