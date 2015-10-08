@@ -18,6 +18,8 @@ namespace Emotes
 		internal Config config = new Config();
 		internal Dictionary<Regex, EmoteRegex> Regexes = new Dictionary<Regex, EmoteRegex>();
 
+		private Command _emoteCmd;
+
 		public override string Author
 		{
 			get
@@ -68,8 +70,22 @@ namespace Emotes
 				Regexes.Add(new Regex(regex.ToString()), regex);
 			}
 
+			_emoteCmd = new Command("", EmoteCallback, "emotes")
+			{
+				HelpDesc = config.HelpText
+			};
+
 			ServerApi.Hooks.ServerChat.Register(this, OnChat, 6);
 			TShockAPI.Hooks.GeneralHooks.ReloadEvent += OnReload;
+            Commands.ChatCommands.Add(_emoteCmd);
+		}
+
+		private void EmoteCallback(CommandArgs e)
+		{
+			foreach (string line in config.HelpText)
+			{
+				e.Player.SendInfoMessage(line);
+			}
 		}
 
 		private void OnReload(TShockAPI.Hooks.ReloadEventArgs e)
@@ -87,6 +103,10 @@ namespace Emotes
 			{
 				Regexes.Add(new Regex(regex.ToString()), regex);
 			}
+
+			Commands.ChatCommands.Remove(_emoteCmd);
+			_emoteCmd.HelpDesc = config.HelpText;
+			Commands.ChatCommands.Add(_emoteCmd);
 		}
 
 		private void AddDefaultsToConfig()

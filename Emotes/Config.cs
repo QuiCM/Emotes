@@ -46,6 +46,10 @@ namespace Emotes
 	public class Config
 	{
 		public List<EmoteRegex> Emotes = new List<EmoteRegex>();
+		public string[] HelpText = new string[]
+		{
+			"Emote plugin: say phrases to trigger emotes!"
+		};
 
 		public void Write(string path)
 		{
