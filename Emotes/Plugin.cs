@@ -11,7 +11,7 @@ using TShockAPI;
 
 namespace Emotes
 {
-	[ApiVersion(1, 21)]
+	[ApiVersion(1, 22)]
 	public class Plugin : TerrariaPlugin
 	{
 		internal string SavePath { get { return Path.Combine(TShock.SavePath, "Emotes.json"); } }
