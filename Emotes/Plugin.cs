@@ -5,13 +5,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Terraria;
 using Terraria.GameContent.UI;
+using Terraria.Localization;
 
 using TerrariaApi.Server;
 using TShockAPI;
 
 namespace Emotes
 {
-	[ApiVersion(2, 0)]
+	[ApiVersion(2, 1)]
 	public class Plugin : TerrariaPlugin
 	{
 		internal string SavePath { get { return Path.Combine(TShock.SavePath, "Emotes.json"); } }
@@ -161,7 +162,7 @@ namespace Emotes
 				args.Handled = true;
 			}
 
-			NetMessage.SendData(91, -1, -1, "", ID, 1, args.Who, 600, Regexes[regex].EmoteID);
+			NetMessage.SendData(91, -1, -1, NetworkText.Empty, ID, 1, args.Who, 600, Regexes[regex].EmoteID);
 		}
 
 		protected override void Dispose(bool disposing)
